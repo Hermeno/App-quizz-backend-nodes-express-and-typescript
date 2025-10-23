@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // pode mudar pra MySQL ou PostgreSQL depois
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -11,61 +11,79 @@ datasource db {
 // 🔹 Usuários (alunos e professores)
 //
 model Usuario {
-  id       Int      @id @default(autoincrement())
-  nome     String
-  email    String   @unique
-  senha    String
-  tipo     String // 'aluno' | 'professor'
-  criadoEm DateTime @default(now())
+  id        Int        @id @default(autoincrement())
+  nome      String
+  email     String     @unique
+  senha     String
+  tipo      String     // 'aluno' | 'professor'
+  criadoEm  DateTime   @default(now())
 
   // Relacionamentos
-  exames     Exame[]     @relation("CriadorExames")
-  respostas  Resposta[]
-  pagamentos Pagamento[]
-  tentativas Tentativa[]
+  exames      Exame[]      @relation("CriadorExames")
+  respostas   Resposta[]
+  pagamentos  Pagamento[]
+  tentativas  Tentativa[]
 }
 
 //
 // 🔹 Exames criados por professores
 //
 model Exame {
-  id        Int      @id @default(autoincrement())
-  titulo    String
-  descricao String?
-  preco     Float    @default(0)
-  criadorId Int
-  criadoEm  DateTime @default(now())
+  id               Int        @id @default(autoincrement())
+  titulo           String
+  descricao        String?
+  preco            Float      @default(0)
+  numeroPerguntas  Int        @default(20) // 🔸 define quantas perguntas o exame tem (20, 40, etc.)
+  estado           String     @default("ativo") // 'ativo' | 'inativo'
+  criadoEm         DateTime   @default(now())
+  criadorId        Int
 
-  criador    Usuario     @relation("CriadorExames", fields: [criadorId], references: [id])
-  perguntas  Pergunta[]
-  pagamentos Pagamento[]
-  tentativas Tentativa[]
+  // Relacionamentos
+  criador      Usuario        @relation("CriadorExames", fields: [criadorId], references: [id])
+  perguntas    Pergunta[]     @relation("ExamePerguntas")
+  pagamentos   Pagamento[]
+  tentativas   Tentativa[]
 }
 
 //
 // 🔹 Perguntas dos exames
 //
 model Pergunta {
-  id       Int     @id @default(autoincrement())
-  exameId  Int
-  pergunta String?
-  imagem   String?
-  tipo     String // 'texto', 'imagem', 'misto'
+  id        Int      @id @default(autoincrement())
+  exameId   Int?
+  pergunta  String?
+  imagem    String?
+  tipo      String   // 'texto', 'imagem', 'misto'
 
-  // Alternativas (texto ou imagem)
-  opcaoA  String?
-  imagemA String?
-  opcaoB  String?
-  imagemB String?
-  opcaoC  String?
-  imagemC String?
-  opcaoD  String?
-  imagemD String?
+  // Alternativas
+  opcaoA    String?
+  imagemA   String?
+  opcaoB    String?
+  imagemB   String?
+  opcaoC    String?
+  imagemC   String?
+  opcaoD    String?
+  imagemD   String?
 
-  correta String // Letra: 'A' | 'B' | 'C' | 'D'
+  correta   String   // Letra: 'A' | 'B' | 'C' | 'D'
+  categoria String?  // 🔸 Tema da pergunta
+  nivel     String?  // 🔸 'facil' | 'medio' | 'dificil'
 
-  exame     Exame      @relation(fields: [exameId], references: [id])
+  exame     Exame?    @relation("ExamePerguntas", fields: [exameId], references: [id])
   respostas Resposta[]
+}
+
+//
+// 🔹 Associação entre exames e perguntas (permite um exame usar perguntas de vários temas)
+//
+model ExamePergunta {
+  id          Int      @id @default(autoincrement())
+  exameId     Int
+  perguntaId  Int
+  ordem       Int?
+
+  exame       Exame     @relation(fields: [exameId], references: [id])
+  pergunta    Pergunta  @relation(fields: [perguntaId], references: [id])
 }
 
 //
@@ -90,9 +108,9 @@ model Pagamento {
   id         Int      @id @default(autoincrement())
   usuarioId  Int
   exameId    Int
-  metodo     String // 'mpesa' | 'emola'
+  metodo     String   // 'mpesa' | 'emola'
   valor      Float
-  status     String // 'pendente' | 'pago' | 'falhado'
+  status     String   // 'pendente' | 'pago' | 'falhado'
   referencia String?
   data       DateTime @default(now())
 
@@ -107,10 +125,10 @@ model Tentativa {
   id        Int      @id @default(autoincrement())
   usuarioId Int
   exameId   Int
-  numero    Int // 1 ou 2
+  numero    Int      // 1 ou 2
   nota      Float?
-  concluido Boolean  @default(false)
-  criadoEm  DateTime @default(now())
+  concluido Boolean   @default(false)
+  criadoEm  DateTime  @default(now())
 
   usuario Usuario @relation(fields: [usuarioId], references: [id])
   exame   Exame   @relation(fields: [exameId], references: [id])
