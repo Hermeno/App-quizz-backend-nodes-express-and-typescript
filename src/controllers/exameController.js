@@ -2,15 +2,44 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+
+// Json example for postman
+{
+  /*
+    "titulo": "Exame de Matemática",
+    "descricao": "Prova abrangendo álgebra e geometria",
+    "data": "2024-07-15T10:00:00Z",
+    "duracao": 90,
+    "preco": 20.0,
+    "numeroPerguntas": 30,
+    "criadorId": 1
+  */
+}
+
 export const criarExame = async (req, res) => {
+
   try {
-    const { titulo, descricao, preco, numeroPerguntas, criadorId } = req.body;
-    const exame = await prisma.exame.create({ data: { titulo, descricao, preco: Number(preco) || 0, numeroPerguntas: Number(numeroPerguntas) || 20, criadorId: Number(criadorId) } });
+    const { titulo, descricao, preco, numeroPerguntas, criadorId  } = req.body;
+    // turn int duracao and turn float preco, and turn int numeroPerguntas
+    const duracao = parseInt(req.body.duracao, 10);
+    const precoFloat = parseFloat(preco);
+    const numeroPerguntasInt = parseInt(numeroPerguntas, 10);
+    const userid = req.user.id; 
+    const exame = await prisma.exame.create({
+      data: { titulo, descricao, duracao, preco: precoFloat || 0, numeroPerguntas: numeroPerguntasInt || 20, estado: "ativo", criadorId: criadorId || userid
+      },
+    });
     res.status(201).json({ message: "Exame criado", exame });
   } catch (error) {
+    console.error("Erro ao criar exame:", error);
     res.status(500).json({ error: "Erro ao criar exame" });
   }
 };
+
+
+
+
+
 
 export const listarExames = async (req, res) => {
   try {

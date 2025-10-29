@@ -4,13 +4,16 @@ const prisma = new PrismaClient();
 
 export const criarPergunta = async (req, res) => {
   try {
-    const dados = req.body;
-    const pergunta = await prisma.pergunta.create({ data: dados });
-    res.status(201).json({ message: "Pergunta criada", pergunta });
+    const { pergunta, imagemPergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, correta, exameId } = req.body;
+    const perguntas = await prisma.pergunta.create({ 
+      data: { pergunta, imagemPergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, correta, exameId }
+     });
+    res.status(201).json({ message: "Pergunta criada", perguntas });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Erro ao criar pergunta" });
   }
-};
+}; 
 
 export const listarPerguntas = async (req, res) => {
   try {
