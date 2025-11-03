@@ -9,10 +9,13 @@ export const verifyToken = (req, res, next) => {
 
   const [, token] = parts;
   try {
+    console.log('Verificando token:', token.substring(0, 10) + '...');
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token decodificado:', { ...payload, id: payload.id });
     req.user = payload; // { id, tipo }
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Token inválido' });
+    console.error('Erro na verificação do token:', err);
+    return res.status(401).json({ error: `Token inválido: ${err.message}` });
   }
 };

@@ -13,12 +13,12 @@ import { verifyToken } from '../middlewares/auth.js';
 const router = express.Router();
 
 router.post('/', verifyToken, registrarResposta);
-router.get('/', listarRespostas);
-router.get('/usuario/:usuarioId', listarRespostasPorUsuario);
-router.get('/media/:usuarioId/:exameId', calcularMediaPorExame);
-router.get('/exame/:exameId/usuario/:usuarioId', listarRespostasPorExameEUsuario);
-router.get('/exame/:exameId/usuario/:usuarioId/corretas', contarRespostasCorretasPorExameEUsuario);
-router.get('/exame/:exameId/usuario/:usuarioId/erradas', contarRespostasErradasPorExameEUsuario);
+router.get('/', verifyToken, listarRespostas);
+router.get('/usuario', verifyToken, listarRespostasPorUsuario);
+router.get('/media/:exameId/:tentativaId', verifyToken, calcularMediaPorExame);
+router.get('/exame/:exameId/:tentativaId', verifyToken, listarRespostasPorExameEUsuario);
+router.get('/exame/:exameId/:tentativaId/corretas', verifyToken, contarRespostasCorretasPorExameEUsuario);
+router.get('/exame/:exameId/:tentativaId/erradas', verifyToken, contarRespostasErradasPorExameEUsuario);
 
 
 

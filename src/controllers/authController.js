@@ -24,7 +24,6 @@ export const registrar = async (req, res) => {
   }
 };
 
-
 export const login = async (req, res) => {
   try { 
     const { email, senha } = req.body;
@@ -35,16 +34,27 @@ export const login = async (req, res) => {
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida) return res.status(400).json({ error: "Credenciais inválidas" });
 
-    const token = jwt.sign({ id: usuario.id, tipo: usuario.tipo }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    console.log("Token gerado para o usuário:", token);
-    res.json({ token, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, tipo: usuario.tipo } });
+    const token = jwt.sign(
+      { id: usuario.id, tipo: usuario.tipo },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        tipo: usuario.tipo,
+        avatar: usuario.avatar || ""
+      }
+    });
   } catch (error) {
     console.error("Erro detalhado no login:", error);
     res.status(500).json({ error: "Erro ao fazer login" });
   }
 };
-
-
 
 
 

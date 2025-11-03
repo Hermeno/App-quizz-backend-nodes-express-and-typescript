@@ -15,8 +15,12 @@ model Usuario {
   nome     String
   email    String   @unique
   senha    String
+  numero   String?
+  cidade   String?
+  classe   String?
   tipo     String // 'aluno' | 'professor'
   criadoEm DateTime @default(now())
+
 
   // Relacionamentos
   exames     Exame[]     @relation("CriadorExames")
@@ -55,6 +59,7 @@ model Pergunta {
   exameId  Int?
   pergunta String?
   imagem   String?
+  tentativaId  Int?
   tipo     String // 'texto', 'imagem', 'misto'
 
   // Alternativas
@@ -91,6 +96,7 @@ model Resposta {
   id           Int      @id @default(autoincrement())
   usuarioId    Int
   perguntaId   Int
+  tentativaId Int
   resposta     String
   correta      Boolean
   respondidoEm DateTime @default(now())

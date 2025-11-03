@@ -2,49 +2,60 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+
+
 export const iniciarTentativa = async (req, res) => {
   try {
-    const { usuarioId, exameId } = req.body;
+    const { exameId } = req.body;
+    const usuarioId = req.user.id; // vindo do verifyToken
+    const tentativas = await prisma.tentativa.findMany({
+      where: { usuarioId: Number(usuarioId), exameId: Number(exameId) },
+      orderBy: { numero: 'asc' },
+    });
+    if (tentativas.length >= 20) {
+      return res.status(400).json({ error: "Limite de tentativas (2) atingido para este exame!" });
+    }
+    const numero = tentativas.length === 0 ? 1 : 2;
+    const tentativa = await prisma.tentativa.create({
+      data: { usuarioId: Number(usuarioId), exameId: Number(exameId), numero },
+    });
 
-    // Count previous tentativas
-    const count = await prisma.tentativa.count({ where: { usuarioId: Number(usuarioId), exameId: Number(exameId) } });
-    const numero = count + 1;
-    if (numero > 2) return res.status(400).json({ error: "Limite de tentativas atingido" });
+    console.log("Tentativa criada:", tentativa);
+    res.status(201).json({ 
+      message: "Tentativa registrada",
+      tentativaId: tentativa.id,
+      numero: tentativa.numero 
+    });
 
-    const tentativa = await prisma.tentativa.create({ data: { usuarioId: Number(usuarioId), exameId: Number(exameId), numero, concluido: false } });
-    res.status(201).json({ message: "Tentativa iniciada", tentativa });
   } catch (error) {
-    res.status(500).json({ error: "Erro ao iniciar tentativa" });
+    console.error("Erro ao registrar tentativa:", error);
+    res.status(500).json({ error: "Erro ao registrar tentativa" });
   }
 };
 
-export const concluirTentativa = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { nota } = req.body;
-    const tentativa = await prisma.tentativa.update({ where: { id: Number(id) }, data: { nota: Number(nota), concluido: true } });
-    res.json({ message: "Tentativa concluída", tentativa });
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao concluir tentativa" });
-  }
-};
 
-export const listarTentativasPorUsuario = async (req, res) => {
-  try {
-    const { usuarioId } = req.params;
-    const tentativas = await prisma.tentativa.findMany({ where: { usuarioId: Number(usuarioId) } });
-    res.json(tentativas);
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao listar tentativas do usuário" });
-  }
-};
 
-export const listarTentativasPorExame = async (req, res) => {
+export const buscarTentativaPorExame = async (req, res) => {
   try {
     const { exameId } = req.params;
-    const tentativas = await prisma.tentativa.findMany({ where: { exameId: Number(exameId) } });
-    res.json(tentativas);
+    const usuarioId = req.user.id; // vindo do verifyToken
+
+    console.log("Buscando tentativa para usuário:", usuarioId, "e exame:", exameId);
+
+    const tentativa = await prisma.tentativa.findFirst({
+      where: { usuarioId: Number(usuarioId), exameId: Number(exameId) },
+      orderBy: { numero: 'asc' },
+    });
+
+    if (!tentativa) {
+      console.log("Nenhuma tentativa encontrada para o usuário:", usuarioId, "e exame:", exameId);
+      return res.status(404).json({ error: "Nenhuma tentativa encontrada para este exame" });
+    }
+
+    console.log("Tentativa encontrada:", tentativa);
+    res.json(tentativa);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao listar tentativas do exame" });
+    console.error("Erro ao buscar tentativa:", error);
+    res.status(500).json({ error: "Erro ao buscar tentativa" });
   }
-};
+};  

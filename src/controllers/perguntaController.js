@@ -56,12 +56,47 @@ export const excluirPergunta = async (req, res) => {
   }
 };
 
+
+
+
+
 export const listarPerguntasPorExame = async (req, res) => {
   try {
     const { exameId } = req.params;
-    const perguntas = await prisma.pergunta.findMany({ where: { exameId: Number(exameId) } });
+    
+    if (!exameId) {
+      console.error('ID do exame não fornecido');
+      return res.status(400).json({ error: "ID do exame é obrigatório" });
+    }
+    
+    console.log('Buscando perguntas para o exame:', exameId);
+
+    const perguntas = await prisma.pergunta.findMany({ 
+      where: { 
+        exameId: Number(exameId) 
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    });
+
+    console.log(`Encontradas ${perguntas.length} perguntas para o exame ${exameId}`);
     res.json(perguntas);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao listar perguntas por exame" });
+    console.error('Erro ao listar perguntas do exame:', error);
+    res.status(500).json({ error: `Erro ao listar perguntas do exame: ${error.message}` });
   }
 };
+
+
+
+
+// export const listarPerguntasPorExame = async (req, res) => {
+//   try {
+//     const { exameId } = req.params;
+//     const perguntas = await prisma.pergunta.findMany({ where: { exameId: Number(exameId) } });
+//     res.json(perguntas);
+//   } catch (error) {
+//     res.status(500).json({ error: "Erro ao listar perguntas por exame" });
+//   }
+// };
