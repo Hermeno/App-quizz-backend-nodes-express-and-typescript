@@ -8,5 +8,5 @@ router.get('/', listarUsuarios);
 router.get("/obterUsuario", verifyToken, obterUsuario);
 router.put('/atualizar', verifyToken, atualizarUsuario);
 router.delete('/:id', verifyToken, excluirUsuario);
-
+router.get("/me", verifyToken, obterUsuario);
 export default router;

@@ -14,7 +14,14 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
-app.use(cors());
+// ✅ CONFIGURA O CORS ANTES DAS ROTAS
+app.use(cors({
+  origin: "https://dashboard-aprovaqui.onrender.com", // Troque aqui pela sua URL real
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 

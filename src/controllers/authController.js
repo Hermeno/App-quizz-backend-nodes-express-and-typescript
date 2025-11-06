@@ -7,8 +7,8 @@ const prisma = new PrismaClient();
 export const registrar = async (req, res) => {
   console.log("Dados recebidos para registro:", req.body);
   try {
-    const tipo = "aluno";
-    const { nome, email, senha } = req.body; // tipo: 'aluno' ou 'professor'
+    
+    const { nome, email, tipo, senha } = req.body; // tipo: 'aluno' ou 'professor'
 
     const existente = await prisma.usuario.findUnique({ where: { email } });
     if (existente) return res.status(400).json({ error: "Email já cadastrado" });
@@ -27,6 +27,7 @@ export const registrar = async (req, res) => {
 export const login = async (req, res) => {
   try { 
     const { email, senha } = req.body;
+    console.log("Tentativa de login com email:", email);
 
     const usuario = await prisma.usuario.findUnique({ where: { email } });
     if (!usuario) return res.status(400).json({ error: "Credenciais inválidas" });
@@ -39,6 +40,7 @@ export const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
+    console.log("Login bem-sucedido para o usuário:", usuario.id);
 
     res.json({
       token,
