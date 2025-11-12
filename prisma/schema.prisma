@@ -137,3 +137,10 @@ model Tentativa {
   usuario Usuario @relation(fields: [usuarioId], references: [id])
   exame   Exame   @relation(fields: [exameId], references: [id])
 }
+model Texto {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  exameId   Int
+  texto     String?
+  titulo    String? 
+}
