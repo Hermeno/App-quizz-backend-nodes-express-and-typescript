@@ -9,32 +9,38 @@ const prisma = new PrismaClient();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir);
-    }
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
 export const upload = multer({ storage });
 
-// Criar pergunta (com ou sem imagem)
+// Criar pergunta
 export const criarPergunta = async (req, res) => {
   try {
-    const { pergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, correta, exameId } = req.body;
-    let imagemPergunta = null;
+    const { pergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, opcaoE, correta, exameId, tentativaId } = req.body;
 
-    if (req.file) {
-      imagemPergunta = `/uploads/${req.file.filename}`;
-    }
+    const imagem = req.file ? `/uploads/${req.file.filename}` : null;
 
     const perguntaCriada = await prisma.pergunta.create({
-      data: { pergunta, imagemPergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, correta, exameId: Number(exameId) }
+      data: {
+        pergunta: pergunta || null,
+        tipo: tipo || 'texto',
+        opcaoA: opcaoA || null,
+        opcaoB: opcaoB || null,
+        opcaoC: opcaoC || null,
+        opcaoD: opcaoD || null,
+        opcaoE: opcaoE || null,
+        correta: correta || null,
+        exameId: exameId ? Number(exameId) : null,
+        tentativaId: tentativaId ? Number(tentativaId) : null,
+        imagem
+      }
     });
 
     res.status(201).json({ message: "Pergunta criada", pergunta: perguntaCriada });
@@ -44,16 +50,14 @@ export const criarPergunta = async (req, res) => {
   }
 };
 
-// Listar todas as perguntas com link completo da imagem
+// Listar perguntas
 export const listarPerguntas = async (req, res) => {
   try {
     const perguntas = await prisma.pergunta.findMany();
-    
     const perguntasComLink = perguntas.map(p => ({
       ...p,
-      imagemPergunta: p.imagemPergunta ? `${req.protocol}://${req.get('host')}${p.imagemPergunta}` : null
+      imagem: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null
     }));
-
     res.json(perguntasComLink);
   } catch (error) {
     console.error(error);
@@ -68,31 +72,39 @@ export const obterPergunta = async (req, res) => {
     const pergunta = await prisma.pergunta.findUnique({ where: { id: Number(id) } });
     if (!pergunta) return res.status(404).json({ error: "Pergunta não encontrada" });
 
-    const perguntaComLink = {
+    res.json({
       ...pergunta,
-      imagemPergunta: pergunta.imagemPergunta ? `${req.protocol}://${req.get('host')}${pergunta.imagemPergunta}` : null
-    };
-
-    res.json(perguntaComLink);
+      imagem: pergunta.imagem ? `${req.protocol}://${req.get('host')}${pergunta.imagem}` : null
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao obter pergunta" });
   }
 };
 
-// Atualizar pergunta (com ou sem nova imagem)
+// Atualizar pergunta
 export const atualizarPergunta = async (req, res) => {
   try {
     const { id } = req.params;
-    const dados = req.body;
+    const dados = { ...req.body };
 
-    if (req.file) {
-      dados.imagemPergunta = `/uploads/${req.file.filename}`;
-    }
+    if (req.file) dados.imagem = `/uploads/${req.file.filename}`;
 
     const perguntaAtualizada = await prisma.pergunta.update({
       where: { id: Number(id) },
-      data: dados
+      data: {
+        pergunta: dados.pergunta || null,
+        tipo: dados.tipo || 'texto',
+        opcaoA: dados.opcaoA || null,
+        opcaoB: dados.opcaoB || null,
+        opcaoC: dados.opcaoC || null,
+        opcaoD: dados.opcaoD || null,
+        opcaoE: dados.opcaoE || null,
+        correta: dados.correta || null,
+        exameId: dados.exameId ? Number(dados.exameId) : null,
+        tentativaId: dados.tentativaId ? Number(dados.tentativaId) : null,
+        imagem: dados.imagem || null
+      }
     });
 
     res.json({ message: "Pergunta atualizada", pergunta: perguntaAtualizada });
@@ -114,11 +126,10 @@ export const excluirPergunta = async (req, res) => {
   }
 };
 
-// Listar perguntas por exame com link completo da imagem
+// Listar perguntas por exame
 export const listarPerguntasPorExame = async (req, res) => {
   try {
     const { exameId } = req.params;
-
     if (!exameId) return res.status(400).json({ error: "ID do exame é obrigatório" });
 
     const perguntas = await prisma.pergunta.findMany({
@@ -128,12 +139,12 @@ export const listarPerguntasPorExame = async (req, res) => {
 
     const perguntasComLink = perguntas.map(p => ({
       ...p,
-      imagemPergunta: p.imagemPergunta ? `${req.protocol}://${req.get('host')}${p.imagemPergunta}` : null
+      imagem: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null
     }));
 
     res.json(perguntasComLink);
   } catch (error) {
-    console.error('Erro ao listar perguntas do exame:', error);
-    res.status(500).json({ error: `Erro ao listar perguntas do exame: ${error.message}` });
+    console.error(error);
+    res.status(500).json({ error: "Erro ao listar perguntas do exame" });
   }
 };
