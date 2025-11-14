@@ -9,6 +9,7 @@ import perguntaRoutes from "./routes/perguntaRoutes.js";
 import respostaRoutes from "./routes/respostaRoutes.js";
 import pagamentoRoutes from "./routes/pagamentoRoutes.js";
 import tentativaRoutes from "./routes/tentativaRoutes.js";
+import textoRoutes from "./routes/textoRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -16,11 +17,17 @@ const prisma = new PrismaClient();
 
 // ✅ CONFIGURA O CORS ANTES DAS ROTAS
 app.use(cors({
-  origin: "https://dashboard-aprovaqui.onrender.com", // Troque aqui pela sua URL real
+  origin: [
+    "https://dashboard-aprovaqui.onrender.com",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://localhost"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
 
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
@@ -33,6 +40,7 @@ app.use("/perguntas", perguntaRoutes);
 app.use("/respostas", respostaRoutes);
 app.use("/pagamentos", pagamentoRoutes);
 app.use("/tentativas", tentativaRoutes);
+app.use("/textos", textoRoutes);
 
 app.get("/", (req, res) => res.send("API do AprovAqui Online 🚀"));
 
