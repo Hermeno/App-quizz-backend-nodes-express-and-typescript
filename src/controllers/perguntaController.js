@@ -6,19 +6,27 @@ import fs from "fs";
 const prisma = new PrismaClient();
 
 // Configuração do multer
+const uploadsRoot = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsRoot)) fs.mkdirSync(uploadsRoot, { recursive: true });
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-    cb(null, uploadDir);
+    cb(null, uploadsRoot);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-\_]/g, '-');
+    cb(null, `${file.fieldname}-${uniqueSuffix}-${safeName}`);
   }
 });
 
-export const upload = multer({ storage });
+function fileFilter(req, file, cb){
+  // aceitar apenas imagens
+  if(!file.mimetype.startsWith('image/')) return cb(new Error('Apenas imagens são permitidas'), false);
+  cb(null, true);
+}
+
+export const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 
 // Criar pergunta
 export const criarPergunta = async (req, res) => {

@@ -41,6 +41,7 @@ export const login = async (req, res) => {
       { expiresIn: "7d" }
     );
     console.log("Login bem-sucedido para o usuário:", usuario.id);
+    console.log("Token gerado:", token);
 
     res.json({
       token,

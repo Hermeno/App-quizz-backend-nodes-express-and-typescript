@@ -4,11 +4,35 @@ const prisma = new PrismaClient();
 
 export const criarTexto = async (req, res) => {
   try {
-    const { exameId, titulo, texto } = req.body;
-    const usuarioId = req.user.id;
+    // logs de debug para entender requests que chegam
+    console.log('POST /textos - headers:', {
+      authorization: req.headers.authorization ? 'present' : 'missing',
+      'content-type': req.headers['content-type'],
+      'content-length': req.headers['content-length']
+    });
+    console.log('POST /textos - body (raw):', req.body);
+    // verifica autenticação (middleware deve popular req.user)
+    const usuarioId = req?.user?.id;
+    
+    if (!usuarioId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
 
-    if (!exameId || !texto) {
-      return res.status(400).json({ error: "exameId e texto são obrigatórios" });
+    const { exameId, titulo, texto } = req.body || {};
+
+    // validação clara de campos obrigatórios
+    if (!exameId) {
+      return res.status(400).json({ error: 'exameId é obrigatório' });
+    }
+    if (!texto || String(texto).trim() === '') {
+      return res.status(400).json({ error: 'texto é obrigatório' });
+    }
+
+    // verifique se o exame existe
+    const exame = await prisma.exame.findUnique({ where: { id: Number(exameId) } });
+    if (!exame) {
+      
+      return res.status(400).json({ error: 'exameId inválido' });
     }
 
     const novoTexto = await prisma.texto.create({
@@ -20,10 +44,11 @@ export const criarTexto = async (req, res) => {
       },
     });
 
-    res.status(201).json({ message: "Texto criado", texto: novoTexto });
+    res.status(201).json({ message: 'Texto criado', texto: novoTexto });
   } catch (error) {
-    console.error("Erro ao criar texto:", error);
-    res.status(500).json({ error: "Erro ao criar texto" });
+    console.error('Erro ao criar texto:', error && error.stack ? error.stack : error);
+    // incluir mensagem de erro no response para facilitar debug (não incluir stack em produção)
+    res.status(500).json({ error: 'Erro ao criar texto', detail: String(error?.message || error) });
   }
 };
 
@@ -40,6 +65,7 @@ export const listarTextos = async (req, res) => {
 export const listarTextosPorExame = async (req, res) => {
   try {
     const { exameId } = req.params;
+    console.log('GET /textos/exame/:exameId - params:', req.params, 'headers:', { authorization: req.headers.authorization ? 'present' : 'missing' });
 
     if (!exameId) {
       return res.status(400).json({ error: "exameId é obrigatório" });
@@ -47,8 +73,11 @@ export const listarTextosPorExame = async (req, res) => {
 
     const textos = await prisma.texto.findMany({
       where: { exameId: Number(exameId) },
-      orderBy: { createdAt: 'asc' }, // ordena por data de criação
+      // O modelo `Texto` não possui campo `createdAt` no schema atual.
+      // Ordena por `id` como fallback para garantir ordem determinística.
+      orderBy: { id: 'asc' },
     });
+    
 
     res.json(textos);
   } catch (error) {

@@ -29,7 +29,25 @@ app.use(cors({
 }));
 
 
-app.use(express.json());
+// Parser JSON com limite razoável e lógica para pular parsing quando o
+// cliente informou Content-Length: 0 (evita `Unexpected end of JSON input`).
+// Observação: se Transfer-Encoding for 'chunked' ou Content-Length ausente,
+// assumimos que pode haver corpo e permitimos o parse normalmente.
+app.use(express.json({
+  limit: '10mb',
+  type: (req) => {
+    const ct = (req.headers['content-type'] || '').toLowerCase();
+    if (!ct.includes('application/json')) return false;
+    const len = req.headers['content-length'];
+    const te = (req.headers['transfer-encoding'] || '').toLowerCase();
+    // Se o cliente declarou explicitamente Content-Length: 0, não parsear
+    if (typeof len !== 'undefined' && Number(len) === 0) return false;
+    // Caso transfer-encoding seja chunked, permita parse (pode ter corpo)
+    if (te && te.includes('chunked')) return true;
+    // Se Content-Length estiver ausente, permitimos o parse (compatível com fetch/axios)
+    return true;
+  }
+}));
 app.use("/uploads", express.static("uploads"));
 
 // Rotas
@@ -46,3 +64,16 @@ app.get("/", (req, res) => res.send("API do AprovAqui Online 🚀"));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+
+// Error handler para capturar JSON inválido e evitar crash do processo
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.error('JSON parse error:', err.message);
+    return res.status(400).json({ error: 'JSON inválido ou body vazio' });
+  }
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('SyntaxError ao parsear JSON:', err.message);
+    return res.status(400).json({ error: 'JSON inválido' });
+  }
+  next(err);
+});
