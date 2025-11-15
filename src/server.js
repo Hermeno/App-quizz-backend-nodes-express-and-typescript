@@ -1,4 +1,5 @@
 import express from "express";
+import path from 'path';
 import cors from "cors";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
@@ -48,7 +49,9 @@ app.use(express.json({
     return true;
   }
 }));
-app.use("/uploads", express.static("uploads"));
+// Serve arquivos de upload a partir do diretório configurado (UPLOADS_DIR)
+const uploadsStaticDir = process.env.UPLOADS_DIR ? path.resolve(process.env.UPLOADS_DIR) : 'uploads';
+app.use('/uploads', express.static(uploadsStaticDir));
 
 // Rotas
 app.use("/auth", authRoutes);

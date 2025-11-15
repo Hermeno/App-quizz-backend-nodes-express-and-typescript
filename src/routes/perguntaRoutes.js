@@ -1,14 +1,16 @@
 import express from 'express';
-import { criarPergunta, listarPerguntas, obterPergunta, atualizarPergunta, excluirPergunta, listarPerguntasPorExame } from '../controllers/perguntaController.js';
+import { criarPergunta, listarPerguntas, obterPergunta, atualizarPergunta, excluirPergunta, listarPerguntasPorExame, upload } from '../controllers/perguntaController.js';
 import { verifyToken } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-router.post('/', verifyToken, criarPergunta);
+// aceitar upload de imagem no campo 'imagemPergunta'
+router.post('/', verifyToken, upload.single('imagemPergunta'), criarPergunta);
 router.get('/', listarPerguntas);
-router.get('/:id', obterPergunta);
-router.put('/:id', verifyToken, atualizarPergunta);
-router.delete('/:id', verifyToken, excluirPergunta);
+// rota específica deve vir antes de '/:id'
 router.get('/exame/:exameId', listarPerguntasPorExame);
+router.get('/:id', obterPergunta);
+router.put('/:id', verifyToken, upload.single('imagemPergunta'), atualizarPergunta);
+router.delete('/:id', verifyToken, excluirPergunta);
 
 export default router;

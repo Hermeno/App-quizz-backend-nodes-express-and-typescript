@@ -6,7 +6,9 @@ import fs from "fs";
 const prisma = new PrismaClient();
 
 // Configuração do multer
-const uploadsRoot = path.join(process.cwd(), 'uploads');
+// Permitir sobrescrever o diretório de uploads via variável de ambiente
+// para suportar discos persistentes em provedores como Render ou paths customizados.
+const uploadsRoot = process.env.UPLOADS_DIR ? path.resolve(process.env.UPLOADS_DIR) : path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsRoot)) fs.mkdirSync(uploadsRoot, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -31,6 +33,9 @@ export const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024
 // Criar pergunta
 export const criarPergunta = async (req, res) => {
   try {
+    console.log('POST /perguntas - headers:', { authorization: req.headers.authorization ? 'present' : 'missing', 'content-type': req.headers['content-type'] });
+    console.log('POST /perguntas - body keys:', Object.keys(req.body || {}));
+    if (req.file) console.log('POST /perguntas - file:', { fieldname: req.file.fieldname, filename: req.file.filename, size: req.file.size });
     const { pergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, opcaoE, correta, exameId, tentativaId } = req.body;
 
     const imagem = req.file ? `/uploads/${req.file.filename}` : null;
@@ -64,7 +69,9 @@ export const listarPerguntas = async (req, res) => {
     const perguntas = await prisma.pergunta.findMany();
     const perguntasComLink = perguntas.map(p => ({
       ...p,
-      imagem: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null
+      // manter propriedade `imagem` e também fornecer `imagemPergunta` para compatibilidade com frontend
+      imagem: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null,
+      imagemPergunta: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null
     }));
     res.json(perguntasComLink);
   } catch (error) {
@@ -82,7 +89,8 @@ export const obterPergunta = async (req, res) => {
 
     res.json({
       ...pergunta,
-      imagem: pergunta.imagem ? `${req.protocol}://${req.get('host')}${pergunta.imagem}` : null
+      imagem: pergunta.imagem ? `${req.protocol}://${req.get('host')}${pergunta.imagem}` : null,
+      imagemPergunta: pergunta.imagem ? `${req.protocol}://${req.get('host')}${pergunta.imagem}` : null
     });
   } catch (error) {
     console.error(error);
@@ -147,7 +155,8 @@ export const listarPerguntasPorExame = async (req, res) => {
 
     const perguntasComLink = perguntas.map(p => ({
       ...p,
-      imagem: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null
+      imagem: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null,
+      imagemPergunta: p.imagem ? `${req.protocol}://${req.get('host')}${p.imagem}` : null
     }));
 
     res.json(perguntasComLink);
