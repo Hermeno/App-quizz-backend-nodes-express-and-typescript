@@ -68,6 +68,7 @@ model Pergunta {
   opcaoC  String?
   opcaoD  String?
   opcaoE  String?
+  opcaoF  String?
 
   correta   String // Letra: 'opcaoA', 'opcaoB', 'opcaoC', 'opcaoD', 'opcaoE'
 

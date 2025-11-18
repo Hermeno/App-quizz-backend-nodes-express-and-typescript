@@ -1,5 +1,5 @@
 import express from 'express';
-import { criarPergunta, listarPerguntas, obterPergunta, atualizarPergunta, excluirPergunta, listarPerguntasPorExame, upload } from '../controllers/perguntaController.js';
+import { criarPergunta, listarPerguntas, obterPergunta, atualizarPergunta, excluirPergunta, baixarImagens, listarPerguntasPorExame, upload } from '../controllers/perguntaController.js';
 import { verifyToken } from '../middlewares/auth.js';
 
 const router = express.Router();
@@ -12,5 +12,6 @@ router.get('/exame/:exameId', listarPerguntasPorExame);
 router.get('/:id', obterPergunta);
 router.put('/:id', verifyToken, upload.single('imagemPergunta'), atualizarPergunta);
 router.delete('/:id', verifyToken, excluirPergunta);
+router.get("/download/imagens", baixarImagens);
 
 export default router;

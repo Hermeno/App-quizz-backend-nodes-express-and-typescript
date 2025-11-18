@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import archiver from "archiver";
 
 const prisma = new PrismaClient();
 
@@ -36,7 +37,7 @@ export const criarPergunta = async (req, res) => {
     console.log('POST /perguntas - headers:', { authorization: req.headers.authorization ? 'present' : 'missing', 'content-type': req.headers['content-type'] });
     console.log('POST /perguntas - body keys:', Object.keys(req.body || {}));
     if (req.file) console.log('POST /perguntas - file:', { fieldname: req.file.fieldname, filename: req.file.filename, size: req.file.size });
-    const { pergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, opcaoE, correta, exameId, tentativaId } = req.body;
+    const { pergunta, tipo, opcaoA, opcaoB, opcaoC, opcaoD, opcaoE, opcaoF, correta, exameId, tentativaId } = req.body;
 
     const imagem = req.file ? `/uploads/${req.file.filename}` : null;
 
@@ -49,6 +50,7 @@ export const criarPergunta = async (req, res) => {
         opcaoC: opcaoC || null,
         opcaoD: opcaoD || null,
         opcaoE: opcaoE || null,
+        opcaoF: opcaoF || null,
         correta: correta || null,
         exameId: exameId ? Number(exameId) : null,
         tentativaId: tentativaId ? Number(tentativaId) : null,
@@ -116,6 +118,7 @@ export const atualizarPergunta = async (req, res) => {
         opcaoC: dados.opcaoC || null,
         opcaoD: dados.opcaoD || null,
         opcaoE: dados.opcaoE || null,
+        opcaoF: dados.opcaoF || null,
         correta: dados.correta || null,
         exameId: dados.exameId ? Number(dados.exameId) : null,
         tentativaId: dados.tentativaId ? Number(dados.tentativaId) : null,
@@ -163,5 +166,43 @@ export const listarPerguntasPorExame = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao listar perguntas do exame" });
+  }
+};
+
+
+
+
+// Baixar todas as imagens das perguntas como um arquivo ZIP
+export const baixarImagens = async (req, res) => {
+  try {
+    const uploadsDir = process.env.UPLOADS_DIR
+      ? path.resolve(process.env.UPLOADS_DIR)
+      : path.join(process.cwd(), "uploads");
+
+    if (!fs.existsSync(uploadsDir)) {
+      return res.status(404).json({ error: "Diretório de uploads não encontrado" });
+    }
+
+    const files = fs.readdirSync(uploadsDir);
+    if (files.length === 0) {
+      return res.status(400).json({ error: "Nenhuma imagem encontrada" });
+    }
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", "attachment; filename=imagens.zip");
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.pipe(res);
+
+    // Adiciona todas as imagens com nome REAL
+    files.forEach((file) => {
+      const filePath = path.join(uploadsDir, file);
+      archive.file(filePath, { name: file });
+    });
+
+    archive.finalize();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao gerar ZIP" });
   }
 };
