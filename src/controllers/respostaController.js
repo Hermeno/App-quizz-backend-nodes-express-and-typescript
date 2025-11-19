@@ -156,27 +156,40 @@ export const calcularMediaPorExame = async (req, res) => {
 
 
 
-
 export const listarRespostasPorExameEUsuario = async (req, res) => {
   try {
     const { exameId, tentativaId } = req.params;
-     const usuarioId = req.user.id 
+    const usuarioId = req.user.id;
 
     const perguntasDoExame = await prisma.pergunta.findMany({
       where: { exameId: Number(exameId) }
     });
+
     const perguntaIds = perguntasDoExame.map((p) => p.id);
 
-    console.log('Listando respostas por exame e usuário ->', { exameId, tentativaId, usuarioId, perguntaIds });
+    console.log("Listando respostas por exame e usuário ->", { 
+      exameId, 
+      tentativaId, 
+      usuarioId, 
+      perguntaIds 
+    });
+
+    // 🔥 AQUI ESTÁ A MUDANÇA IMPORTANTE
     const respostas = await prisma.resposta.findMany({
       where: {
         usuarioId: Number(usuarioId),
         perguntaId: { in: perguntaIds },
-        tentativaId: Number(tentativaId),
+        tentativaId: Number(tentativaId)
+      },
+      include: {
+        pergunta: true, // 🔥 RETORNA O EXERCÍCIO COMPLETO
       }
     });
-    console.log('Respostas retornadas (listarRespostasPorExameEUsuario):', respostas);
+
+    console.log("Respostas retornadas (AGORA COM PERGUNTA):", respostas);
+
     res.json(respostas);
+
   } catch (error) {
     console.error("Erro ao listar respostas por exame e usuário:", error);
     res.status(500).json({ error: "Erro ao listar respostas por exame e usuário" });
